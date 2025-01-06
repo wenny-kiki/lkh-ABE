@@ -4,6 +4,7 @@ import com.duwei.cp.abe.attribute.Attribute;
 import com.duwei.cp.abe.parameter.*;
 import com.duwei.cp.abe.polynomial.Polynomial;
 import com.duwei.cp.abe.structure.*;
+import com.duwei.cp.abe.text.CipherOwn;
 import com.duwei.cp.abe.text.CipherText;
 import com.duwei.cp.abe.text.PlainText;
 import com.duwei.cp.abe.util.ConvertUtils;
@@ -11,6 +12,7 @@ import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Field;
 import it.unisa.dia.gas.jpbc.Pairing;
 
+import java.security.acl.Group;
 import java.util.*;
 
 /**
@@ -21,6 +23,88 @@ import java.util.*;
  * @Description: 算法引擎
  */
 public class CpAneEngine {
+
+    /**
+     * 在Z_r上选取随机元素
+     *
+     * @param publicKey
+     * @return
+     */
+    private Element getRandomElementInZr(PublicKey publicKey) {
+        return publicKey.getPairingParameter().getZr().newRandomElement().getImmutable();
+    }
+
+//    private void compute(AccessTreeNode node, PublicKey publicKey, CipherText cipherText) {
+//        Field z_r = publicKey.getPairingParameter().getZr();
+//        Element secretNumber = node.getSecretNumber();
+//        int childrenSize = node.getChildrenSize();
+//        if (node.getAccessTreeNodeType() == AccessTreeNodeType.INNER_NODE) {
+//            //节点选择的多项式
+//            Polynomial polynomial = new Polynomial(((InnerAccessTreeNode)node).getThreshold() - 1, secretNumber, z_r);
+//            for (AccessTreeNode child : node.getChildren()) {
+//                int index = child.getIndex();
+//                Element childSecret = polynomial.getValue(z_r.newElement(index).getImmutable());
+//                child.setParent(node);
+//                child.setSecretNumber(childSecret);
+//                //递归去设置子节点
+//                compute(child, publicKey, cipherText);
+//            }
+//        }
+//
+//        //节点是叶节点
+//        if (node.getAccessTreeNodeType() == AccessTreeNodeType.LEAF_NODE) {
+//            LeafAccessTreeNode leafNode = (LeafAccessTreeNode) node;
+//            //属性
+//            Attribute attribute = leafNode.getAttribute();
+//            //属性值
+//            Element attributeValue = attribute.getAttributeValue();
+//            Element c_y = (publicKey.getPairingParameter().getGenerator().powZn(leafNode.getSecretNumber())).getImmutable();
+//            Element c_y_pie = (publicKey.hash(
+//                    attributeValue.powZn(leafNode.getSecretNumber())
+//            ).getImmutable());
+//            cipherText.putCy(attribute, c_y);
+//            cipherText.putCyPie(attribute, c_y_pie);
+//        }
+//    }
+
+    /**
+     * 递归获取密文组件
+     *
+     * @param node
+     * @param publicKey
+     * @param cipherOwn
+     */
+    private void compute(AccessTreeNode node, PublicKey publicKey, CipherOwn cipherOwn) {
+        Field z_r = publicKey.getPairingParameter().getZr();
+        Element secretNumber = node.getSecretNumber();
+        int childrenSize = node.getChildrenSize();
+        if (node.getAccessTreeNodeType() == AccessTreeNodeType.INNER_NODE) {
+            //节点选择的多项式
+            Polynomial polynomial = new Polynomial(((InnerAccessTreeNode)node).getThreshold() - 1, secretNumber, z_r);
+            for (AccessTreeNode child : node.getChildren()) {
+                int index = child.getIndex();
+                Element childSecret = polynomial.getValue(z_r.newElement(index).getImmutable());
+                child.setParent(node);
+                child.setSecretNumber(childSecret);
+                //递归去设置子节点
+                compute(child, publicKey, cipherOwn);
+            }
+        }
+
+        //节点是叶节点
+        if (node.getAccessTreeNodeType() == AccessTreeNodeType.LEAF_NODE) {
+            LeafAccessTreeNode leafNode = (LeafAccessTreeNode) node;
+            //属性
+            Attribute attribute = leafNode.getAttribute();
+            //属性值
+            Element attributeValue = attribute.getAttributeValue();
+            Element c_y = (publicKey.getPairingParameter().getGenerator().powZn(leafNode.getSecretNumber())).getImmutable();
+            Element c_y_pie = (publicKey.hash(
+                    attributeValue).powZn(leafNode.getSecretNumber()).getImmutable());
+            cipherOwn.putCy(attribute, c_y);
+            cipherOwn.putCyPie(attribute, c_y_pie);
+        }
+    }
 
     /**
      * 基于系统密钥和属性集合生成用户私钥
@@ -42,72 +126,61 @@ public class CpAneEngine {
      * @param accessTree
      * @return
      */
-    public CipherText encrypt(PublicKey pk, PlainText plainText, AccessTree accessTree) {
+//    public CipherText encrypt(PublicKey pk, PlainText plainText, AccessTree accessTree) {
+//        AccessTreeNode root = accessTree.getRoot();
+//        //根节点的秘密数
+//        Element s = getRandomElementInZr(pk);
+//        root.setSecretNumber(s);
+//
+//        CipherText cipherText = new CipherText();
+//        //1.设置密文第一部分
+//
+//
+//        Element c_ware = (plainText.getMessageValue().mul(pk.getEgg_a().powZn(s).getImmutable())).getImmutable();
+//        cipherText.setC_wave(c_ware);
+//
+//        //2.设置密文第二部分
+//        Element c = pk.getH().powZn(s).getImmutable();
+//        cipherText.setC(c);
+//
+//        //3.递归设置子节点
+//        compute(root, pk, cipherText);
+//
+//        //设置访问树
+//        cipherText.setAccessTree(accessTree);
+//        return cipherText;
+//    }
+
+    /**
+     * 加密第一阶段
+     *
+     * @param pk
+     * @param plainText
+     * @param accessTree
+     * @return
+     */
+    public CipherOwn encryptOne(PublicKey pk, GroupKey gk, PlainText plainText, AccessTree accessTree){
         AccessTreeNode root = accessTree.getRoot();
-        //根节点的秘密数
+        //根节点的秘密值
         Element s = getRandomElementInZr(pk);
         root.setSecretNumber(s);
 
-        CipherText cipherText = new CipherText();
-        //1.设置密文第一部分
+        CipherOwn cipherOwn = new CipherOwn();
 
+        //设置密文第一部分
+        cipherOwn.setVer(0);
+        cipherOwn.setAccessTree(accessTree);
+        Element c_msg = (plainText.getMessageValue().mul(pk.getEgg_a().powZn(s).getImmutable())).getImmutable();
+        cipherOwn.setC_msg(c_msg);
+        Element c_pie = pk.getH().powZn(s).getImmutable();
+        cipherOwn.setC_pie(c_pie);
+        Element c_grp = gk.getGpk().powZn(s).getImmutable();
+        cipherOwn.setC_grp(c_grp);
 
-        Element c_ware = (plainText.getMessageValue().mul(pk.getEgg_a().powZn(s).getImmutable())).getImmutable();
-        cipherText.setC_wave(c_ware);
+        //递归设置密文第二部分
+        compute(root, pk, cipherOwn);
 
-        //2.设置密文第二部分
-        Element c = pk.getH().powZn(s).getImmutable();
-        cipherText.setC(c);
-
-        //3.递归设置子节点
-        compute(root, pk, cipherText);
-
-        //设置访问树
-        cipherText.setAccessTree(accessTree);
-        return cipherText;
-    }
-
-    /**
-     * 在Z_r上选取随机元素
-     *
-     * @param publicKey
-     * @return
-     */
-    private Element getRandomElementInZr(PublicKey publicKey) {
-        return publicKey.getPairingParameter().getZr().newRandomElement().getImmutable();
-    }
-
-    private void compute(AccessTreeNode node, PublicKey publicKey, CipherText cipherText) {
-        Field z_r = publicKey.getPairingParameter().getZr();
-        Element secretNumber = node.getSecretNumber();
-        int childrenSize = node.getChildrenSize();
-        if (node.getAccessTreeNodeType() == AccessTreeNodeType.INNER_NODE) {
-            //节点选择的多项式
-            Polynomial polynomial = new Polynomial(((InnerAccessTreeNode)node).getThreshold() - 1, secretNumber, z_r);
-            for (AccessTreeNode child : node.getChildren()) {
-                int index = child.getIndex();
-                Element childSecret = polynomial.getValue(z_r.newElement(index).getImmutable());
-                child.setParent(node);
-                child.setSecretNumber(childSecret);
-                //递归去设置子节点
-                compute(child, publicKey, cipherText);
-            }
-        }
-
-        //节点是叶节点
-        if (node.getAccessTreeNodeType() == AccessTreeNodeType.LEAF_NODE) {
-            LeafAccessTreeNode leafNode = (LeafAccessTreeNode) node;
-            //属性
-            Attribute attribute = leafNode.getAttribute();
-            //属性值
-            Element attributeValue = attribute.getAttributeValue();
-            Element c_y = (publicKey.getPairingParameter().getGenerator().powZn(leafNode.getSecretNumber())).getImmutable();
-            Element c_y_pie = (publicKey.hash(
-                    attributeValue.powZn(leafNode.getSecretNumber())
-            ).getImmutable());
-            cipherText.putCy(attribute, c_y);
-            cipherText.putCyPie(attribute, c_y_pie);
-        }
+        return cipherOwn;
     }
 
     public String decryptToStr(PublicKey publicKey, UserPrivateKey userPrivateKey, CipherText cipherText){
