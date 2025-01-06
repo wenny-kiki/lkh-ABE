@@ -15,7 +15,7 @@ import lombok.ToString;
 @ToString
 public class PublicKey extends Key {
     /**
-     * h = g ^ alpha
+     * h = g ^ beta
      */
     private Element h;
     /**

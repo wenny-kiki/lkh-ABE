@@ -22,6 +22,13 @@ import java.util.*;
  */
 public class CpAneEngine {
 
+    /**
+     * 基于系统密钥和属性集合生成用户私钥
+     *
+     * @param masterPrivateKey
+     * @param attributes
+     * @return
+     */
     public UserPrivateKey keyGen(MasterPrivateKey masterPrivateKey, List<Attribute> attributes) {
         return UserPrivateKey.build(masterPrivateKey, attributes);
     }

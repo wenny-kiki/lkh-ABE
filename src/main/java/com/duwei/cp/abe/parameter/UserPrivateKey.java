@@ -18,6 +18,11 @@ import java.util.Map;
 @Data
 public class UserPrivateKey {
     private Element D;
+    private Element SK;
+    /**
+     * g ^ 1/(beta*z)
+     */
+    private Element g_z;
     private PairingParameter pairingParameter;
     public Map<Attribute,Element> D_j_map;
     public Map<Attribute,Element> D_j_pie_map;
@@ -60,16 +65,22 @@ public class UserPrivateKey {
         UserPrivateKey userPrivateKey = new UserPrivateKey();
         userPrivateKey.setPairingParameter(masterPrivateKey.getPairingParameter());
         userPrivateKey.setUserAttributes(attributes);
+
         Element r = masterPrivateKey.getPairingParameter().getZr().newRandomElement().getImmutable();
+        Element z = masterPrivateKey.getPairingParameter().getZr().newRandomElement().getImmutable();
+        userPrivateKey.setSK(z);
         Element alpha = masterPrivateKey.getAlpha();
         Element beta = masterPrivateKey.getBeta();
         Element g = masterPrivateKey.getPairingParameter().getGenerator();
-        Element D = g.powZn((alpha.add(r)).div(beta)).getImmutable();
+
+        Element D = g.powZn((alpha.add(r)).div(beta.mul(z))).getImmutable();
         userPrivateKey.setD(D);
+        Element g_z = g.powZn(beta.mul(z).invert()).getImmutable();
+        userPrivateKey.setG_z(g_z);
         for (Attribute attribute : attributes){
             Element r_j = masterPrivateKey.getPairingParameter().getZr().newRandomElement().getImmutable();
-            Element D_j = g.powZn(r).mul(masterPrivateKey.hash(attribute.getAttributeValue()).powZn(r_j)).getImmutable();
-            Element D_j_pie = g.powZn(r_j).getImmutable();
+            Element D_j = g.powZn(r.div(z)).mul(masterPrivateKey.hash(attribute.getAttributeValue()).powZn(r_j.div(z))).getImmutable();
+            Element D_j_pie = g.powZn(r_j.div(z)).getImmutable();
             userPrivateKey.putDjPie(attribute,D_j_pie);
             userPrivateKey.putDj(attribute,D_j);
         }
