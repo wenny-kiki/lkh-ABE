@@ -198,37 +198,84 @@ public class CpAneEngine {
         return cipherVer;
     }
 
-    public String decryptToStr(PublicKey publicKey, UserPrivateKey userPrivateKey, CipherText cipherText){
-        Element decrypt = decrypt(publicKey, userPrivateKey, cipherText);
-        if (decrypt != null){
+    /**
+     * 解密得到明文字符串
+     *
+     * @param publicKey
+     * @param userPrivateKey
+     * @param cipherVer
+     * @return
+     */
+    public String decryptToStr(PublicKey publicKey, UserPrivateKey userPrivateKey, Element ctPro, CipherVer cipherVer){
+        if (ctPro != null){
+            Element decrypt = ctPro.powZn(userPrivateKey.getSK()).mul(cipherVer.getC());
             return new String(ConvertUtils.byteToStr(decrypt.toBytes()));
         }
-        return null;
+        else{
+            throw new IllegalStateException("Decryption failed: invalid cipherText or userPrivateKey.");
+        }
+//        return null;
     }
 
 
-    public Element decrypt(PublicKey publicKey, UserPrivateKey userPrivateKey, CipherText cipherText) {
-        Element decryptNode = decryptNode(publicKey, userPrivateKey, cipherText, cipherText.getAccessTree().getRoot(), userPrivateKey.getUserAttributes());
+    /**
+     * 解密核心算法
+     *
+     * @param publicKey
+     * @param userPrivateKey
+     * @param cipherText
+     * @return
+     */
+//    private Element decrypt(PublicKey publicKey, UserPrivateKey userPrivateKey, CipherText cipherText) {
+//        Element decryptNode = decryptNode(publicKey, userPrivateKey, cipherText, cipherText.getAccessTree().getRoot(), userPrivateKey.getUserAttributes());
+//        if (decryptNode != null) {
+//            Element D = userPrivateKey.getD();
+//            Element C = cipherText.getC();
+//            Element c_wave = cipherText.getC_wave();
+//            Pairing pairing = publicKey.getPairingParameter().getPairing();
+//            return c_wave.div(pairing.pairing(C, D).div(decryptNode));
+//        }
+//        return null;
+//    }
+
+    /**
+     * 解密前转换算法
+     *
+     * @param publicKey
+     * @param userPrivateKey
+     * @param cipherVer
+     * @return
+     */
+    public Element transform(PublicKey publicKey, UserPrivateKey userPrivateKey, CipherVer cipherVer, GroupKey gk) {
+        Element decryptNode = decryptNode(publicKey, userPrivateKey, cipherVer, cipherVer.getAccessTree().getRoot(), userPrivateKey.getUserAttributes());
         if (decryptNode != null) {
-            Element D = userPrivateKey.getD();
-            Element C = cipherText.getC();
-            Element c_wave = cipherText.getC_wave();
+            Element D = userPrivateKey.getD().getImmutable();
+            Element c_pie = cipherVer.getC_pie().getImmutable();
+            Element create = userPrivateKey.getG_z().powZn(gk.getGsk()).getImmutable();
             Pairing pairing = publicKey.getPairingParameter().getPairing();
-            return c_wave.div(pairing.pairing(C, D).div(decryptNode));
+            return decryptNode.div(pairing.pairing(c_pie,D).mul(pairing.pairing(c_pie,create)));
         }
         return null;
     }
 
-
-    //解密到G1上
-    public Element decryptNode(PublicKey publicKey, UserPrivateKey userPrivateKey, CipherText cipherText, AccessTreeNode x, List<Attribute> attributes) {
+    /**
+     * 递归判断用户属性是否满足访问树，解密到G1上
+     *
+     * @param publicKey
+     * @param userPrivateKey
+     * @param cipherVer
+     * @param x
+     * @param attributes
+     * @return
+     */
+    private Element decryptNode(PublicKey publicKey, UserPrivateKey userPrivateKey, CipherVer cipherVer, AccessTreeNode x, List<Attribute> attributes) {
         //叶子节点
         if (x.getAccessTreeNodeType() == AccessTreeNodeType.LEAF_NODE) {
             LeafAccessTreeNode leafNode = ((LeafAccessTreeNode) x);
             Attribute attribute = leafNode.getAttribute();
             if (attributes.contains(attribute)) {
-                Element cy = cipherText.getCy(attribute);
-                Element cyPie = cipherText.getCyPie(attribute);
+                Element cy = cipherVer.getCy(attribute);
+                Element cyPie = cipherVer.getCyPie(attribute);
                 Element dj = userPrivateKey.getDj(attribute);
                 Element djPie = userPrivateKey.getDjPie(attribute);
                 Pairing pairing = userPrivateKey.getPairingParameter().getPairing();
@@ -236,16 +283,17 @@ public class CpAneEngine {
             } else {
                 return null;
             }
-        } else {
-            //内部节点
+        }
+        //内部节点
+        else {
             InnerAccessTreeNode innerNode = ((InnerAccessTreeNode) x);
             int threshold = innerNode.getThreshold();
             int satisfyCount = 0;
 
-            //重建
+            // 节点处理
             Map<Element, Element> indexFzMap = new HashMap<>();
             for (AccessTreeNode child : innerNode.getChildren()) {
-                Element decryptNode = decryptNode(publicKey, userPrivateKey, cipherText, child, attributes);
+                Element decryptNode = decryptNode(publicKey, userPrivateKey, cipherVer, child, attributes);
                 if (decryptNode != null) {
                     satisfyCount++;
                     Element index = publicKey.getPairingParameter().getZr().newElement(child.getIndex()).getImmutable();
@@ -256,6 +304,7 @@ public class CpAneEngine {
                 return null;
             }
 
+            // 插值重构
             Element result = publicKey.getPairingParameter().getG1().newOneElement();
             Element zero = publicKey.getPairingParameter().getZr().newZeroElement().getImmutable();
             List<Element> Sx = new ArrayList<>(indexFzMap.keySet());
