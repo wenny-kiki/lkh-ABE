@@ -6,6 +6,7 @@ import com.duwei.cp.abe.polynomial.Polynomial;
 import com.duwei.cp.abe.structure.*;
 import com.duwei.cp.abe.text.CipherOwn;
 import com.duwei.cp.abe.text.CipherText;
+import com.duwei.cp.abe.text.CipherVer;
 import com.duwei.cp.abe.text.PlainText;
 import com.duwei.cp.abe.util.ConvertUtils;
 import it.unisa.dia.gas.jpbc.Element;
@@ -181,6 +182,20 @@ public class CpAneEngine {
         compute(root, pk, cipherOwn);
 
         return cipherOwn;
+    }
+
+    /**
+     * 加密第二阶段
+     *
+     * @param cipherOwn
+     * @param pk
+     * @return
+     */
+    public CipherVer encryptTwo(CipherOwn cipherOwn, PublicKey pk){
+        CipherVer cipherVer = new CipherVer(cipherOwn);
+        PairingParameter pp = pk.getPairingParameter();
+        cipherVer.setC(pp.getPairing().pairing(pp.getGenerator(),cipherVer.getC_grp().duplicate()).mul(cipherVer.getC_msg()));
+        return cipherVer;
     }
 
     public String decryptToStr(PublicKey publicKey, UserPrivateKey userPrivateKey, CipherText cipherText){
