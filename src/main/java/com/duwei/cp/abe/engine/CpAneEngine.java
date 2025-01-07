@@ -199,6 +199,18 @@ public class CpAneEngine {
     }
 
     /**
+     *  代理重加密
+     *
+     * @param cipherVer
+     * @param rk
+     * @param publicKey
+     */
+    public void reEncrypt(CipherVer cipherVer, Element rk, PublicKey publicKey){
+        cipherVer.setC(publicKey.getPairingParameter().getPairing().pairing(cipherVer.getC_grp(),rk).mul(cipherVer.getC_msg()));
+        cipherVer.setVer(cipherVer.getVer()+1);
+    }
+
+    /**
      * 解密得到明文字符串
      *
      * @param publicKey
