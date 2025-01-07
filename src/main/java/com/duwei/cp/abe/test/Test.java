@@ -6,8 +6,11 @@ import com.duwei.cp.abe.parameter.*;
 import com.duwei.cp.abe.structure.AccessTree;
 import com.duwei.cp.abe.structure.AccessTreeBuildModel;
 import com.duwei.cp.abe.structure.AccessTreeNode;
+import com.duwei.cp.abe.text.CipherOwn;
 import com.duwei.cp.abe.text.CipherText;
+import com.duwei.cp.abe.text.CipherVer;
 import com.duwei.cp.abe.text.PlainText;
+import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
 import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 
@@ -38,6 +41,8 @@ public class Test {
         //3.生成用户私钥
         CpAneEngine cpAneEngine = new CpAneEngine();
         UserPrivateKey userPrivateKey = cpAneEngine.keyGen(systemKey.getMasterPrivateKey(), attributes);
+        //生成组密钥
+        GroupKey gk = GroupKey.build(systemKey.getPublicKey().getPairingParameter());
         //4.明文
         String plainTextStr = "你好，CP - ABE，我是JPBC";
         PlainText plainText = new PlainText(plainTextStr, systemKey.getPublicKey());
@@ -45,9 +50,12 @@ public class Test {
         //5.构建访问树
         AccessTree accessTree = getAccessTree(systemKey.getPublicKey());
         //6.加密
-        CipherText cipherText = cpAneEngine.encrypt(systemKey.getPublicKey(), plainText, accessTree);
-        System.out.println("cipherText : " + cipherText);
-        String decryptStr = cpAneEngine.decryptToStr(systemKey.getPublicKey(), userPrivateKey, cipherText);
+        CipherOwn cipherOwn = cpAneEngine.encryptOne(systemKey.getPublicKey(), gk, plainText, accessTree);
+        CipherVer cipherVer = cpAneEngine.encryptTwo(cipherOwn,systemKey.getPublicKey());
+        System.out.println("cipherText : " + cipherVer);
+        //解密
+        Element ctPro = cpAneEngine.transform(systemKey.getPublicKey(),userPrivateKey,cipherVer,gk);
+        String decryptStr = cpAneEngine.decryptToStr(userPrivateKey, ctPro, cipherVer);
         System.out.println("decryptStr : " + decryptStr);
     }
 

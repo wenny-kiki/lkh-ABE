@@ -213,12 +213,11 @@ public class CpAneEngine {
     /**
      * 解密得到明文字符串
      *
-     * @param publicKey
      * @param userPrivateKey
      * @param cipherVer
      * @return
      */
-    public String decryptToStr(PublicKey publicKey, UserPrivateKey userPrivateKey, Element ctPro, CipherVer cipherVer){
+    public String decryptToStr(UserPrivateKey userPrivateKey, Element ctPro, CipherVer cipherVer){
         if (ctPro != null){
             Element decrypt = ctPro.powZn(userPrivateKey.getSK()).mul(cipherVer.getC());
             return new String(ConvertUtils.byteToStr(decrypt.toBytes()));
