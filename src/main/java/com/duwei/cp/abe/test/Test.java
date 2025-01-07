@@ -28,40 +28,116 @@ public class Test {
 
 
     public static void test1() {
-        //1.生成系统密钥  包含公钥-私钥
+        // 1.系统初始化
         SystemKey systemKey = SystemKey.build();
-        //2.设置用户属性
+        //设置用户属性
         List<Attribute> attributes = Arrays.asList(
-               // new Attribute("学生", systemKey.getPublicKey()),
-                //new Attribute("老师", systemKey.getPublicKey()),
                 new Attribute("硕士", systemKey.getPublicKey()),
                 new Attribute("护士", systemKey.getPublicKey())
-               // new Attribute("二班", systemKey.getPublicKey())
         );
-        //3.生成用户私钥
+        // 2.用户私钥生成
         CpAneEngine cpAneEngine = new CpAneEngine();
         UserPrivateKey userPrivateKey = cpAneEngine.keyGen(systemKey.getMasterPrivateKey(), attributes);
-        //生成组密钥
+        // 生成组密钥
         GroupKey gk = GroupKey.build(systemKey.getPublicKey().getPairingParameter());
-        //4.明文
-        String plainTextStr = "你好，CP - ABE，我是JPBC";
+        // 明文
+        String plainTextStr = "神秘明文";
         PlainText plainText = new PlainText(plainTextStr, systemKey.getPublicKey());
         System.out.println("plainTextStr : " + plainTextStr);
-        //5.构建访问树
+        // 构建访问树
         AccessTree accessTree = getAccessTree(systemKey.getPublicKey());
-        //6.加密
+        // 3.加密
         CipherOwn cipherOwn = cpAneEngine.encryptOne(systemKey.getPublicKey(), gk, plainText, accessTree);
         CipherVer cipherVer = cpAneEngine.encryptTwo(cipherOwn,systemKey.getPublicKey());
         System.out.println("cipherText : " + cipherVer);
-        //解密
+
         Element ctPro = cpAneEngine.transform(systemKey.getPublicKey(),userPrivateKey,cipherVer,gk);
+        // 4.解密
         String decryptStr = cpAneEngine.decryptToStr(userPrivateKey, ctPro, cipherVer);
         System.out.println("decryptStr : " + decryptStr);
+
+        // 5.重加密
+        Element k_0 = gk.getGsk().getImmutable();
+        gk = GroupKey.build(systemKey.getPublicKey().getPairingParameter());
+        Element rk = systemKey.getPublicKey().getPairingParameter().getGenerator().powZn(gk.getGsk().duplicate().div(k_0));
+        cpAneEngine.reEncrypt(cipherVer,rk,systemKey.getPublicKey());
+        System.out.println("Version:" + cipherVer.getVer());
     }
 
+    public static void test() {
+        int repet = 5;
+        long initTimeTotal = 0;
+        long keyGenTimeTotal = 0;
+        long encryptTimeTotal = 0;
+        long decryptTimeTotal = 0;
+        long reEncryptTimeTotal = 0;
+
+        for(int i=0; i<repet; i++) {
+            // 1.系统初始化
+            long startTime = System.nanoTime();
+            SystemKey systemKey = SystemKey.build();
+            long endTime = System.nanoTime();
+            initTimeTotal += (endTime - startTime);
+
+            //设置用户属性
+            List<Attribute> attributes = Arrays.asList(
+                    new Attribute("硕士", systemKey.getPublicKey()),
+                    new Attribute("护士", systemKey.getPublicKey())
+            );
+
+            // 2.用户私钥生成
+            CpAneEngine cpAneEngine = new CpAneEngine();
+            startTime = System.nanoTime();
+            UserPrivateKey userPrivateKey = cpAneEngine.keyGen(systemKey.getMasterPrivateKey(), attributes);
+            endTime = System.nanoTime();
+            keyGenTimeTotal += (endTime - startTime);
+
+            // 生成组密钥
+            GroupKey gk = GroupKey.build(systemKey.getPublicKey().getPairingParameter());
+            // 明文
+            String plainTextStr = "神秘明文";
+            PlainText plainText = new PlainText(plainTextStr, systemKey.getPublicKey());
+            System.out.println("plainTextStr : " + plainTextStr);
+
+            // 构建访问树
+            AccessTree accessTree = getAccessTree(systemKey.getPublicKey());
+
+            // 3.加密
+            startTime = System.nanoTime();
+            CipherOwn cipherOwn = cpAneEngine.encryptOne(systemKey.getPublicKey(), gk, plainText, accessTree);
+            endTime = System.nanoTime();
+            encryptTimeTotal += (endTime - startTime);
+            CipherVer cipherVer = cpAneEngine.encryptTwo(cipherOwn, systemKey.getPublicKey());
+            System.out.println("cipherText : " + cipherVer);
+
+            Element ctPro = cpAneEngine.transform(systemKey.getPublicKey(), userPrivateKey, cipherVer, gk);
+            // 4.解密
+            startTime = System.nanoTime();
+            String decryptStr = cpAneEngine.decryptToStr(userPrivateKey, ctPro, cipherVer);
+            endTime = System.nanoTime();
+            decryptTimeTotal += (endTime - startTime);
+            System.out.println("decryptStr : " + decryptStr);
+
+            // 5.重加密
+            Element k_0 = gk.getGsk().getImmutable();
+            gk = GroupKey.build(systemKey.getPublicKey().getPairingParameter());
+            Element rk = systemKey.getPublicKey().getPairingParameter().getGenerator().powZn(gk.getGsk().duplicate().div(k_0));
+            startTime = System.nanoTime();
+            cpAneEngine.reEncrypt(cipherVer, rk, systemKey.getPublicKey());
+            endTime = System.nanoTime();
+            reEncryptTimeTotal += (endTime - startTime);
+            System.out.println("Version:" + cipherVer.getVer());
+        }
+
+        System.out.println("系统初始化平均时间: " + (initTimeTotal / repet) / 1e6 + " 毫秒");
+        System.out.println("用户私钥生成平均时间: " + (keyGenTimeTotal / repet) / 1e6 + " 毫秒");
+        System.out.println("加密平均时间: " + (encryptTimeTotal / repet) / 1e6 + " 毫秒");
+        System.out.println("解密平均时间: " + (decryptTimeTotal / repet) / 1e6 + " 毫秒");
+        System.out.println("重加密平均时间: " + (reEncryptTimeTotal / repet) / 1e6 + " 毫秒");
+    }
 
     public static void main(String[] args) {
-        test1();
+        test();
     }
 
 
