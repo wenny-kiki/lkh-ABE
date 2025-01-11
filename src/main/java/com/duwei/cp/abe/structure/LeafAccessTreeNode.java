@@ -31,13 +31,13 @@ public class LeafAccessTreeNode extends AccessTreeNode {
     }
 
     public LeafAccessTreeNode (String attribute, PublicKey publicKey, AccessTreeNode parent, int index){
-        this(attribute, publicKey.getPairingParameter().getG0());
+        this(attribute, publicKey.getPairingParameter().getG1());
         super.setIndex(index);
         super.setParent(parent);
     }
 
     public LeafAccessTreeNode (String attribute, PublicKey publicKey , int index){
-        this(attribute, publicKey.getPairingParameter().getG0());
+        this(attribute, publicKey.getPairingParameter().getG1());
         super.setIndex(index);
     }
 

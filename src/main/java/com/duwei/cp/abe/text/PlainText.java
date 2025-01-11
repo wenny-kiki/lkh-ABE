@@ -21,12 +21,12 @@ public class PlainText {
     private String messageStr;
 
     public PlainText(String messageStr, PublicKey publicKey) {
-        this(messageStr, publicKey.getPairingParameter().getG1());
+        this(messageStr, publicKey.getPairingParameter().getGT());
     }
 
-    private PlainText(String messageStr, Field G1) {
+    private PlainText(String messageStr, Field GT) {
         this.messageStr = messageStr;
-        this.messageValue = G1.newElementFromBytes(messageStr.getBytes(StandardCharsets.UTF_8)).getImmutable();
+        this.messageValue = GT.newElementFromBytes(messageStr.getBytes(StandardCharsets.UTF_8)).getImmutable();
     }
 
 }

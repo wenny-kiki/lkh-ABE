@@ -19,10 +19,13 @@ import lombok.ToString;
 @ToString
 public class PairingParameter {
     private Pairing pairing;
-    private Field G0;
+//    private Field G0;
     private Field G1;
+    private Field G2;
+    private Field GT;
     private Field Zr;
-    private Element generator;
+    private Element generator1;
+    private Element generator2;
 
     private PairingParameter() {
 
@@ -33,10 +36,13 @@ public class PairingParameter {
         PairingParameter pairingParameter = new PairingParameter();
         Pairing pairing = PairingFactory.getPairing("params/curves/a.properties");
         pairingParameter.setPairing(pairing);
-        pairingParameter.setG0(pairing.getG1());
-        pairingParameter.setG1(pairing.getGT());
+        pairingParameter.setG1(pairing.getG1());
+//        pairingParameter.setG2(pairing.getG2());
+        pairingParameter.setG2(pairing.getG1());
+        pairingParameter.setGT(pairing.getGT());
         pairingParameter.setZr(pairing.getZr());
-        pairingParameter.setGenerator(pairingParameter.getG0().newRandomElement().getImmutable());
+        pairingParameter.setGenerator1(pairingParameter.getG1().newRandomElement().getImmutable());
+        pairingParameter.setGenerator2(pairingParameter.getG2().newRandomElement().getImmutable());
         return pairingParameter;
     }
 

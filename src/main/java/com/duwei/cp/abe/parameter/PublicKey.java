@@ -25,7 +25,7 @@ public class PublicKey extends Key {
     /**
      * f = g ^ (1 / beta)
      */
-    private Element f;
+//    private Element f;
 
     private PublicKey() {
 
@@ -38,9 +38,9 @@ public class PublicKey extends Key {
 
     public static PublicKey build(PairingParameter parameter, MasterPrivateKey msk) {
         PublicKey publicKey = new PublicKey(parameter);
-        publicKey.setH(parameter.getGenerator().powZn(msk.getBeta()).getImmutable());
-        publicKey.setF(parameter.getGenerator().powZn(msk.getBeta().invert()).getImmutable());
-        publicKey.setEgg_a((parameter.getPairing().pairing(parameter.getGenerator(), parameter.getGenerator()).mulZn(msk.getAlpha())).getImmutable());
+        publicKey.setH(parameter.getGenerator1().powZn(msk.getBeta()).getImmutable());
+//        publicKey.setF(parameter.getGenerator().powZn(msk.getBeta().invert()).getImmutable());
+        publicKey.setEgg_a((parameter.getPairing().pairing(parameter.getGenerator1(), parameter.getGenerator2()).mulZn(msk.getAlpha())).getImmutable());
         return publicKey;
     }
 

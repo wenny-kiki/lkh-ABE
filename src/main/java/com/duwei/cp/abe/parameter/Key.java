@@ -25,7 +25,11 @@ public abstract class Key {
      * @param element
      * @return
      */
-    public Element hash(Element element) {
-        return pairingParameter.getG0().newElementFromBytes(element.toBytes()).getImmutable();
+    public Element hashG1(Element element) {
+        return pairingParameter.getG1().newElementFromBytes(element.toBytes()).getImmutable();
+    }
+
+    public Element hashG2(Element element) {
+        return pairingParameter.getG2().newElementFromBytes(element.toBytes()).getImmutable();
     }
 }

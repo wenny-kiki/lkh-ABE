@@ -25,13 +25,13 @@ public class Attribute {
     private Element attributeValue;
     private String attributeName;
 
-    public Attribute(String attributeName, PublicKey publicKey){
-        this(attributeName,publicKey.getPairingParameter().getG0());
-    }
+//    public Attribute(String attributeName, PublicKey publicKey){
+//        this(attributeName,publicKey.getPairingParameter().getG2());
+//    }
 
-    public Attribute(String attributeName, Field G0){
+    public Attribute(String attributeName, Field G){
         this.attributeName = attributeName;
-        this.attributeValue = G0.newElementFromBytes(attributeName.getBytes(StandardCharsets.UTF_8)).getImmutable();
+        this.attributeValue = G.newElementFromBytes(attributeName.getBytes(StandardCharsets.UTF_8)).getImmutable();
     }
 
     @Override

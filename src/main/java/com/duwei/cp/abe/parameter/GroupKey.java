@@ -21,7 +21,7 @@ public class GroupKey extends Key {
     public static GroupKey build(PairingParameter parameter) {
         GroupKey groupKey = new GroupKey(parameter);
         groupKey.setGsk(parameter.getZr().newRandomElement().getImmutable());
-        groupKey.setGpk(parameter.getGenerator().powZn(groupKey.getGsk()).getImmutable());
+        groupKey.setGpk(parameter.getGenerator2().powZn(groupKey.getGsk()).getImmutable());
         return groupKey;
     }
 }

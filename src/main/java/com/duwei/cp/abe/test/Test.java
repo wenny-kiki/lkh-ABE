@@ -7,7 +7,6 @@ import com.duwei.cp.abe.structure.AccessTree;
 import com.duwei.cp.abe.structure.AccessTreeBuildModel;
 import com.duwei.cp.abe.structure.AccessTreeNode;
 import com.duwei.cp.abe.text.CipherOwn;
-import com.duwei.cp.abe.text.CipherText;
 import com.duwei.cp.abe.text.CipherVer;
 import com.duwei.cp.abe.text.PlainText;
 import it.unisa.dia.gas.jpbc.Element;
@@ -32,8 +31,8 @@ public class Test {
         SystemKey systemKey = SystemKey.build();
         //设置用户属性
         List<Attribute> attributes = Arrays.asList(
-                new Attribute("硕士", systemKey.getPublicKey()),
-                new Attribute("护士", systemKey.getPublicKey())
+                new Attribute("硕士", systemKey.getPublicKey().getPairingParameter().getG2()),
+                new Attribute("护士", systemKey.getPublicKey().getPairingParameter().getG2())
         );
         // 2.用户私钥生成
         CpAneEngine cpAneEngine = new CpAneEngine();
@@ -59,7 +58,7 @@ public class Test {
         // 5.重加密
         Element k_0 = gk.getGsk().getImmutable();
         gk = GroupKey.build(systemKey.getPublicKey().getPairingParameter());
-        Element rk = systemKey.getPublicKey().getPairingParameter().getGenerator().powZn(gk.getGsk().duplicate().div(k_0));
+        Element rk = systemKey.getPublicKey().getPairingParameter().getGenerator1().powZn(gk.getGsk().duplicate().div(k_0));
         cpAneEngine.reEncrypt(cipherVer,rk,systemKey.getPublicKey());
         System.out.println("Version:" + cipherVer.getVer());
     }
@@ -78,11 +77,12 @@ public class Test {
             SystemKey systemKey = SystemKey.build();
             long endTime = System.nanoTime();
             initTimeTotal += (endTime - startTime);
+            System.out.println("系统初始化时间: " + (endTime - startTime) / 1e6 + " 毫秒");
 
             //设置用户属性
             List<Attribute> attributes = Arrays.asList(
-                    new Attribute("硕士", systemKey.getPublicKey()),
-                    new Attribute("护士", systemKey.getPublicKey())
+                    new Attribute("硕士", systemKey.getPublicKey().getPairingParameter().getG2()),
+                    new Attribute("护士", systemKey.getPublicKey().getPairingParameter().getG2())
             );
 
             // 2.用户私钥生成
@@ -91,6 +91,7 @@ public class Test {
             UserPrivateKey userPrivateKey = cpAneEngine.keyGen(systemKey.getMasterPrivateKey(), attributes);
             endTime = System.nanoTime();
             keyGenTimeTotal += (endTime - startTime);
+            System.out.println("用户私钥生成时间: " + (endTime - startTime) / 1e6 + " 毫秒");
 
             // 生成组密钥
             GroupKey gk = GroupKey.build(systemKey.getPublicKey().getPairingParameter());
@@ -109,6 +110,7 @@ public class Test {
             encryptTimeTotal += (endTime - startTime);
             CipherVer cipherVer = cpAneEngine.encryptTwo(cipherOwn, systemKey.getPublicKey());
             System.out.println("cipherText : " + cipherVer);
+            System.out.println("加密时间: " + (endTime - startTime) / 1e6 + " 毫秒");
 
             Element ctPro = cpAneEngine.transform(systemKey.getPublicKey(), userPrivateKey, cipherVer, gk);
             // 4.解密
@@ -117,16 +119,18 @@ public class Test {
             endTime = System.nanoTime();
             decryptTimeTotal += (endTime - startTime);
             System.out.println("decryptStr : " + decryptStr);
+            System.out.println("解密时间: " + (endTime - startTime) / 1e6 + " 毫秒");
 
             // 5.重加密
             Element k_0 = gk.getGsk().getImmutable();
             gk = GroupKey.build(systemKey.getPublicKey().getPairingParameter());
-            Element rk = systemKey.getPublicKey().getPairingParameter().getGenerator().powZn(gk.getGsk().duplicate().div(k_0));
+            Element rk = systemKey.getPublicKey().getPairingParameter().getGenerator1().powZn(gk.getGsk().duplicate().div(k_0));
             startTime = System.nanoTime();
             cpAneEngine.reEncrypt(cipherVer, rk, systemKey.getPublicKey());
             endTime = System.nanoTime();
             reEncryptTimeTotal += (endTime - startTime);
             System.out.println("Version:" + cipherVer.getVer());
+            System.out.println("重加密时间: " + (endTime - startTime) / 1e6 + " 毫秒");
         }
 
         System.out.println("系统初始化平均时间: " + (initTimeTotal / repet) / 1e6 + " 毫秒");

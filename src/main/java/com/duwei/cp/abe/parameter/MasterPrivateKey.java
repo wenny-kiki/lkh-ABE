@@ -21,7 +21,7 @@ public class MasterPrivateKey extends Key{
     /**
      * g pow alpha
      */
-    private Element g_alpha;
+//    private Element g_alpha;
     /**
      * alpha
      */
@@ -40,7 +40,7 @@ public class MasterPrivateKey extends Key{
         MasterPrivateKey masterPrivateKey = new MasterPrivateKey(parameter);
         masterPrivateKey.setBeta(parameter.getZr().newRandomElement().getImmutable());
         masterPrivateKey.setAlpha(parameter.getZr().newRandomElement().getImmutable());
-        masterPrivateKey.setG_alpha((parameter.getGenerator().powZn(masterPrivateKey.getAlpha())).getImmutable());
+//        masterPrivateKey.setG_alpha((parameter.getGenerator().powZn(masterPrivateKey.getAlpha())).getImmutable());
         return masterPrivateKey;
     }
 

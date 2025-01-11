@@ -5,7 +5,6 @@ import com.duwei.cp.abe.parameter.*;
 import com.duwei.cp.abe.polynomial.Polynomial;
 import com.duwei.cp.abe.structure.*;
 import com.duwei.cp.abe.text.CipherOwn;
-import com.duwei.cp.abe.text.CipherText;
 import com.duwei.cp.abe.text.CipherVer;
 import com.duwei.cp.abe.text.PlainText;
 import com.duwei.cp.abe.util.ConvertUtils;
@@ -99,8 +98,8 @@ public class CpAneEngine {
             Attribute attribute = leafNode.getAttribute();
             //属性值
             Element attributeValue = attribute.getAttributeValue();
-            Element c_y = (publicKey.getPairingParameter().getGenerator().powZn(leafNode.getSecretNumber())).getImmutable();
-            Element c_y_pie = (publicKey.hash(
+            Element c_y = (publicKey.getPairingParameter().getGenerator1().powZn(leafNode.getSecretNumber())).getImmutable();
+            Element c_y_pie = (publicKey.hashG1(
                     attributeValue).powZn(leafNode.getSecretNumber()).getImmutable());
             cipherOwn.putCy(attribute, c_y);
             cipherOwn.putCyPie(attribute, c_y_pie);
@@ -194,7 +193,7 @@ public class CpAneEngine {
     public CipherVer encryptTwo(CipherOwn cipherOwn, PublicKey pk){
         CipherVer cipherVer = new CipherVer(cipherOwn);
         PairingParameter pp = pk.getPairingParameter();
-        cipherVer.setC(pp.getPairing().pairing(pp.getGenerator(),cipherVer.getC_grp().duplicate()).mul(cipherVer.getC_msg()));
+        cipherVer.setC(pp.getPairing().pairing(pp.getGenerator1(),cipherVer.getC_grp().duplicate()).mul(cipherVer.getC_msg()));
         return cipherVer;
     }
 
@@ -206,7 +205,7 @@ public class CpAneEngine {
      * @param publicKey
      */
     public void reEncrypt(CipherVer cipherVer, Element rk, PublicKey publicKey){
-        cipherVer.setC(publicKey.getPairingParameter().getPairing().pairing(cipherVer.getC_grp(),rk).mul(cipherVer.getC_msg()));
+        cipherVer.setC(publicKey.getPairingParameter().getPairing().pairing(rk,cipherVer.getC_grp()).mul(cipherVer.getC_msg()));
         cipherVer.setVer(cipherVer.getVer()+1);
     }
 
@@ -290,7 +289,7 @@ public class CpAneEngine {
                 Element dj = userPrivateKey.getDj(attribute);
                 Element djPie = userPrivateKey.getDjPie(attribute);
                 Pairing pairing = userPrivateKey.getPairingParameter().getPairing();
-                return pairing.pairing(dj, cy).div(pairing.pairing(djPie, cyPie)).getImmutable();
+                return pairing.pairing(cy, dj).div(pairing.pairing(cyPie,djPie)).getImmutable();
             } else {
                 return null;
             }
@@ -316,14 +315,14 @@ public class CpAneEngine {
             }
 
             // 插值重构
-            Element result = publicKey.getPairingParameter().getG1().newOneElement();
+            Element result = publicKey.getPairingParameter().getGT().newOneElement();
             Element zero = publicKey.getPairingParameter().getZr().newZeroElement().getImmutable();
             List<Element> Sx = new ArrayList<>(indexFzMap.keySet());
             for (Map.Entry<Element, Element> entry : indexFzMap.entrySet()) {
                 Element curIndex = entry.getKey();
                 Element curFz = entry.getValue();
                 Element powZn = Polynomial.lagrangeCoefficient(curIndex, Sx, zero, publicKey.getPairingParameter().getZr());
-                result.mul((curFz.powZn(powZn)));
+                result.mul(curFz.powZn(powZn));
             }
             return result.getImmutable();
         }

@@ -71,7 +71,7 @@ public class UserPrivateKey {
         userPrivateKey.setSK(z);
         Element alpha = masterPrivateKey.getAlpha();
         Element beta = masterPrivateKey.getBeta();
-        Element g = masterPrivateKey.getPairingParameter().getGenerator();
+        Element g = masterPrivateKey.getPairingParameter().getGenerator2();
 
         Element D = g.powZn((alpha.add(r)).div(beta.mul(z))).getImmutable();
         userPrivateKey.setD(D);
@@ -79,7 +79,7 @@ public class UserPrivateKey {
         userPrivateKey.setG_z(g_z);
         for (Attribute attribute : attributes){
             Element r_j = masterPrivateKey.getPairingParameter().getZr().newRandomElement().getImmutable();
-            Element D_j = g.powZn(r.div(z)).mul(masterPrivateKey.hash(attribute.getAttributeValue()).powZn(r_j.div(z))).getImmutable();
+            Element D_j = g.powZn(r.div(z)).mul(masterPrivateKey.hashG2(attribute.getAttributeValue()).powZn(r_j.div(z))).getImmutable();
             Element D_j_pie = g.powZn(r_j.div(z)).getImmutable();
             userPrivateKey.putDjPie(attribute,D_j_pie);
             userPrivateKey.putDj(attribute,D_j);
